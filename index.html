@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>眠くなりにくいおやつ診断チャート</title>
+  <title>集中したい人のためのおやつ診断</title>
   <style>
     body{
       font-family: sans-serif;
@@ -47,13 +47,30 @@
     .cols{ display:grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 8px; text-align:left; }
     .box{ border:1px solid #eee; border-radius: 14px; padding: 12px 14px; }
     .box h3{ margin: 0 0 8px; font-size: 16px; text-align:center; }
+    .reason-box{
+      margin-top:16px;
+      text-align:left;
+      border:1px solid #eee;
+      border-radius:14px;
+      padding:12px 14px;
+      background:#fafafa;
+    }
+    .reason-box summary{
+      cursor:pointer;
+      font-weight:700;
+      list-style:none;
+    }
+    .reason-box summary::-webkit-details-marker{ display:none; }
+    .reason-box summary::after{ content:' ▼'; }
+    .reason-box[open] summary::after{ content:' ▲'; }
+    .reason-box p{ margin:10px 0 0; line-height:1.6; }
     .error{ color:#b00020; font-weight:700; text-align:left; white-space:pre-wrap; }
     @media (max-width: 640px){ .cols{ grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
 <div class="container">
-  <h1>眠くなりにくいおやつ診断チャート</h1>
+  <h1>集中したい人のためのおやつ診断</h1>
   <div id="app"><p>読み込み中…</p></div>
 </div>
 
@@ -62,6 +79,10 @@
   const app = document.getElementById('app');
 
   try {
+    // 各食べ物に「おすすめポイント」を後から追加できるようにする
+    // 例：
+    // { name: 'ゼロ', url: '...', type: '市販', point: '糖質ゼロで甘いものが食べたいときにおすすめ' }
+    // point は空でもOK。後から文章を入れると結果画面に表示される。
     // ----------------------
     // 食べ物（候補）
     // ※PDFリンクは「HTMLと同じフォルダ」に置いて、
@@ -70,53 +91,52 @@
     //   - lowcarb_basque.pdf
     //   - okara_burrito.pdf
     //   - pizza_okara.pdf
-    //   - lowcarb_marupan.pdf
+    //   - lowcarb_rollpan.pdf
     //   - lowcarb_warabimochi.pdf
     //   - lowcarb_gelato.pdf
-    //   - lowcarb_berry_marshmallow.pdf
+    //   - lowcarb_blueberry_marshmallow.pdf
     //   - lowcarb_chips.pdf
     // ----------------------
     const foods = [
       // 市販
-      { name: 'ゼロ', url: 'https://www.lotte.co.jp/products/catalogue/choco/11/detail01.html', type: '市販' },
-      { name: 'ゼロ カカオ70％', url: 'https://www.lotte.co.jp/products/catalogue/choco/11/detail06.html', type: '市販' },
-      { name: 'ゼロ ミルクキャンディ', url: 'https://www.lotte.co.jp/products/catalogue/candy/42/detail01.html', type: '市販' },
-      { name: 'ゼロ チューイングキャンディ', url: 'https://www.lotte.co.jp/products/catalogue/candy/42/detail04.html', type: '市販' },
-      { name: 'ゼロ プロテインチョコバー', url: 'https://www.lotte.co.jp/products/catalogue/choco/11/detail09.html', type: '市販' },
-      { name: 'ゼロ グラノーラチョコバー', url: 'https://www.lotte.co.jp/products/catalogue/choco/11/detail10.html', type: '市販' },
-      { name: 'ゼロ シュガーフリービスケット', url: 'https://www.lotte.co.jp/products/catalogue/biscuit/07/detail01.html', type: '市販' },
-      { name: 'ゼロ シュガーフリーココアビスケット', url: 'https://www.lotte.co.jp/products/catalogue/biscuit/07/detail09.html', type: '市販' },
-      { name: 'こんにゃくゼリー', url: 'https://health.orihiro.com/product/result/?cid=69', type: '市販' },
-      { name: 'ゼンブブレッド3種の雑穀', url: 'https://zenb.jp/products/bread-grains01', type: '市販' },
-      { name: 'ゼンブブレッドふわもちロール', url: 'https://zenb.jp/products/bread-fuwamochi01', type: '市販' },
-      { name: 'ゼンブブレッドきなこあんぱん', url: 'https://zenb.jp/products/bread-kinako01', type: '市販' },
-      { name: 'ゼンブブレッドカカオ', url: 'https://zenb.jp/products/bread-cacao01', type: '市販' },
-      { name: 'ゼンブチップス', url: 'https://zenb.jp/products/chips-salt01', type: '市販' },
-      { name: 'ゼンブパスタスナック', url: 'https://zenb.jp/products/pastasnack-salt01', type: '市販' },
-      { name: '6Pチーズ', url: 'https://www.snow6p.jp/', type: '市販' },
-      { name: 'さけるチーズ', url: 'https://www.meg-snow.com/hokkaido100/sakerucheese/', type: '市販' },
-      { name: 'ビオラル 低糖質ナッツ', url: 'https://www.lifecorp.jp/pb/bioral/tmp/item_detail.html?janCode=4972262182830', type: '市販' },
-      { name: 'フリーズドライスープ・味噌汁（無印良品）', url: 'https://www.muji.com/jp/ja/store/cmdty/section/S1080502?web_store=web_section_lv3_search_by_category', type: '市販' },
+      { name: 'ゼロ', url: 'https://www.lotte.co.jp/products/catalogue/choco/11/detail01.html', type: '市販', point: '砂糖・糖類ゼロのスタンダードチョコレート。甘いものが食べたいときの定番' },
+      { name: 'ゼロ カカオ70％', url: 'https://www.lotte.co.jp/products/catalogue/choco/11/detail06.html', type: '市販' , point: '砂糖・糖類ゼロで、カカオポリフェノールもとれるチョコレート' },
+      { name: 'ゼロ ミルクキャンディ', url: 'https://www.lotte.co.jp/products/catalogue/candy/42/detail01.html', type: '市販', point: '砂糖・糖類ゼロキャンディ'  },
+      { name: 'ゼロ プロテインチョコバー', url: 'https://www.lotte.co.jp/products/catalogue/choco/11/detail09.html', type: '市販' , point: '砂糖・糖類ゼロ＆プロテイン15gが摂れて満足感のあるチョコバー' },
+      { name: 'ゼロ グラノーラチョコバー', url: 'https://www.lotte.co.jp/products/catalogue/choco/11/detail10.html', type: '市販' , point: '砂糖・糖類ゼロ＆ビタミン・鉄・たんぱく質が摂れて満足感のあるグラノーラバー' },
+      { name: 'ゼロ シュガーフリービスケット', url: 'https://www.lotte.co.jp/products/catalogue/biscuit/07/detail01.html', type: '市販' , point: '砂糖・糖類ゼロビスケット' },
+      { name: 'こんにゃくゼリー', url: 'https://health.orihiro.com/product/result/?cid=69', type: '市販' , point: '低糖質ゼリー' },
+      { name: 'ゼンブブレッド3種の雑穀', url: 'https://zenb.jp/products/bread-grains01', type: '市販' , point: '低糖質で食物繊維が豊富' },
+      { name: 'ゼンブブレッドふわもちロール', url: 'https://zenb.jp/products/bread-fuwamochi01', type: '市販' , point: '低糖質で食物繊維が豊富' },
+      { name: 'ゼンブブレッドきなこあんぱん', url: 'https://zenb.jp/products/bread-kinako01', type: '市販' , point: '低糖質＆食物繊維豊富なのに、きなこあんの優しい甘さが楽しめるパン' },
+      { name: 'ゼンブブレッドカカオ', url: 'https://zenb.jp/products/bread-cacao01', type: '市販' , point: '低糖質＆食物繊維豊富で、チョコ風味がしっかり感じられる満足感のあるパン' },
+      { name: 'ゼンブチップス', url: 'https://zenb.jp/products/chips-salt01', type: '市販' , point: '低糖質＆高たんぱくで食物繊維も摂れる、サクサク食感のスナック' },
+      { name: 'ゼンブパスタスナック', url: 'https://zenb.jp/products/pastasnack-salt01', type: '市販' , point: '低糖質＆高たんぱくで食物繊維も豊富。軽い食感で手が止まらないスナック' },
+      { name: '6Pチーズ', url: 'https://www.snow6p.jp/', type: '市販' , point: '糖質ゼロでたんぱく質・カルシウムが摂れる、小腹を満たしやすいチーズ' },
+      { name: 'さけるチーズ', url: 'https://www.meg-snow.com/hokkaido100/sakerucheese/', type: '市販' , point: '糖質ゼロ＆高たんぱくで、さく食感が集中の合間のストレス発散にも◎' },
+      { name: 'ビオラル 低糖質ナッツ', url: 'https://www.lifecorp.jp/pb/bioral/tmp/item_detail.html?janCode=4972262182830', type: '市販' , point: '低糖質で良質な脂質・たんぱく質が摂れる、腹持ちのよいナッツミックス' },
+      { name: 'フリーズドライスープ・味噌汁（無印良品）', url: 'https://www.muji.com/jp/ja/store/cmdty/section/S1080502?web_store=web_section_lv3_search_by_category', type: '市販' , point: '低糖質で温かさが集中の合間に一息つかせてくれる、手軽なスープ・味噌汁' },
 
       // 手作り（PDFや自作ページにリンク可）
-      { name: 'オートミールクッキー', url: 'oatmeal_cookie.pdf', type: '手作り' },
-      { name: '低糖質 杏仁豆腐', url: 'annin_tofu.pdf', type: '手作り' },
-      { name: '低糖質バスクチーズケーキ', url: 'lowcarb_basque.pdf', type: '手作り' },
-      { name: 'おからハムチーズブリトー', url: 'okara_burrito.pdf', type: '手作り' },
-      { name: 'ピザまん風おから蒸しパン', url: 'pizza_okara.pdf', type: '手作り' },
-      { name: '低糖質抹茶スノーボールクッキー', url: 'matcha_snowball_cookie.pdf', type: '手作り' },
-      { name: '低糖質わらび餅', url: 'lowcarb_warabimochi.pdf', type: '手作り' },
-      { name: '低糖質ジェラート', url: 'lowcarb_gelato.pdf', type: '手作り' },
-      { name: '低糖質ベリーマシュマロ', url: 'lowcarb_berry_marshmallow.pdf', type: '手作り' },
-      { name: '低糖質チップス', url: 'lowcarb_chips.pdf', type: '手作り' },
-      { name: '低糖質丸パン', url: 'lowcarb_marupan.pdf', type: '手作り' },
+      { name: 'オートミールクッキー', url: 'oatmeal_cookie.pdf', type: '手作り' , point: '食物繊維豊富なオートミール使用で、腹持ちよくサクサク食感が楽しめるクッキー' },
+      { name: '低糖質 杏仁豆腐', url: 'annin_tofu.pdf', type: '手作り' , point: '砂糖不使用でさっぱり食べられる、口当たりなめらかなデザート' },
+      { name: '低糖質バスクチーズケーキ', url: 'lowcarb_basque.pdf', type: '手作り' , point: '砂糖不使用でもチーズのコクと濃厚さが満足感を高めてくれるケーキ' },
+      { name: 'おからハムチーズブリトー', url: 'okara_burrito.pdf', type: '手作り' , point: 'おから＆チーズで低糖質＆高たんぱく。しっかり食べごたえのある食事系おやつ' },
+      { name: 'ピザまん風おから蒸しパン', url: 'pizza_okara.pdf', type: '手作り' , point: 'おから使用で低糖質＆高たんぱく。ピザ風の味つけで食事系の満足感が得られる蒸しパン' },
+      { name: '低糖質抹茶スノーボールクッキー', url: 'matcha_snowball_cookie.pdf', type: '手作り' , point: '砂糖不使用で抹茶の風味がほんのり広がる、口どけのよいクッキー' },
+      { name: '低糖質わらび餅', url: 'lowcarb_warabimochi.pdf', type: '手作り' , point: '砂糖不使用でもちもち食感が楽しめる、さっぱりした和風デザート' },
+      { name: '低糖質抹茶アイスクリーム', url: 'lowcarb_Green tea ice cream.pdf', type: '手作り' , point: '砂糖不使用で抹茶の風味豊かな、なめらかで本格的なアイスクリーム' },
+      { name: '低糖質ブルーベリーマシュマロ', url: 'lowcarb_blueberry_marshmallow.pdf', type: '手作り' , point: '砂糖不使用でブルーベリーの風味が広がる、ふわふわ食感のやさしい甘さのマシュマロ' },
+      { name: '低糖質チップス', url: 'lowcarb_chips.pdf', type: '手作り' , point: '低糖質素材で作ったサクサク食感のチップス。手軽につまめる食事系おやつ' },
+      { name: '低糖質ロールパン', url: 'lowcarb_rollpan.pdf', type: '手作り' , point: '低糖質素材で作ったふわふわ食感のロールパン。食事系でしっかり腹持ちする一品' },
       // ここに新しいアイテムを追加してください
     ];
 
     const ALL = foods.map(f => f.name);
 
     // ----------------------
-    // あなたの最新分類（Q1/Q2/Q3）
+    // あなたの最新分類（Q1/Q2/Q3/Q4）
+    // Q4 は Q1=NO のときだけ出す
     // ----------------------
 
     // Q1（アレルギー）YES のとき残す候補
@@ -127,12 +147,11 @@
       'ゼンブブレッドふわもちロール',
       'ゼンブブレッドきなこあんぱん',
       'ゼンブブレッドカカオ',
-      'ゼロ チューイングキャンディ',
       'ゼンブチップス',
       'ゼンブパスタスナック',
       '低糖質わらび餅',
-      '低糖質ベリーマシュマロ',
-      '低糖質丸パン',
+      '低糖質ブルーベリーマシュマロ',
+      '低糖質ロールパン',
     ];
 
     // Q2（甘い系）
@@ -140,9 +159,9 @@
       // いまは該当なし
     ];
     const Q2_YES = [
-      'ゼロ','ゼロ カカオ70％','ゼロ ミルクキャンディ','ゼロ チューイングキャンディ',
-      'ゼロ プロテインチョコバー','ゼロ グラノーラチョコバー','ゼロ シュガーフリービスケット','ゼロ シュガーフリーココアビスケット',
-      'こんにゃくゼリー','低糖質 杏仁豆腐','低糖質バスクチーズケーキ','低糖質ジェラート','低糖質わらび餅','低糖質ベリーマシュマロ','低糖質抹茶スノーボールクッキー',
+      'ゼロ','ゼロ カカオ70％','ゼロ ミルクキャンディ',
+      'ゼロ プロテインチョコバー','ゼロ グラノーラチョコバー','ゼロ シュガーフリービスケット',
+      'こんにゃくゼリー','低糖質 杏仁豆腐','低糖質バスクチーズケーキ','低糖質ジェラート','低糖質わらび餅','低糖質ブルーベリーマシュマロ','低糖質抹茶スノーボールクッキー',
       'オートミールクッキー',
       'ゼンブブレッドきなこあんぱん',
       'ゼンブブレッドカカオ',
@@ -153,7 +172,7 @@
       'フリーズドライスープ・味噌汁（無印良品）',
       'おからハムチーズブリトー','ピザまん風おから蒸しパン',
       '低糖質チップス',
-      '低糖質丸パン',
+      '低糖質ロールパン',
     ];
 
     const Q2_YES_EFFECTIVE = [
@@ -169,7 +188,6 @@
     // Q3（腹持ち）
     const Q3_BOTH = [
       'ゼロ シュガーフリービスケット',
-      'ゼロ シュガーフリーココアビスケット',
       'ビオラル 低糖質ナッツ',
       '低糖質バスクチーズケーキ',
       'フリーズドライスープ・味噌汁（無印良品）',
@@ -186,13 +204,13 @@
       'ゼンブブレッドきなこあんぱん',
       'おからハムチーズブリトー','ピザまん風おから蒸しパン',
       'ゼンブブレッドカカオ',
-      '低糖質丸パン',
+      '低糖質ロールパン',
     ];
     const Q3_NO = [
       // あなた指定：Q3=NO
-      'ゼロ','ゼロ カカオ70％','ゼロ ミルクキャンディ','ゼロ チューイングキャンディ','こんにゃくゼリー',
+      'ゼロ','ゼロ カカオ70％','ゼロ ミルクキャンディ','こんにゃくゼリー',
       '6Pチーズ','さけるチーズ',
-      '低糖質 杏仁豆腐','低糖質ジェラート','低糖質ベリーマシュマロ',
+      '低糖質 杏仁豆腐','低糖質ジェラート','低糖質ブルーベリーマシュマロ',
       '低糖質チップス',
     ];
 
@@ -206,6 +224,41 @@
       ...Q3_BOTH
     ];
 
+    // Q4（食感）※Q1=NO のときだけ使う
+    const Q4_YES = [
+      'オートミールクッキー',
+      '低糖質抹茶スノーボールクッキー',
+      'ゼロ プロテインチョコバー',
+      'ゼロ グラノーラチョコバー',
+      'ゼロ シュガーフリービスケット',
+      'ゼンブチップス',
+      'ゼンブパスタスナック',
+      'ビオラル 低糖質ナッツ',
+      '低糖質チップス',
+    ];
+
+    const Q4_NO = [
+      '低糖質バスクチーズケーキ',
+      '低糖質わらび餅',
+      '低糖質 杏仁豆腐',
+      '低糖質ジェラート',
+      '低糖質ブルーベリーマシュマロ',
+      'ゼロ',
+      'ゼロ カカオ70％',
+      'ゼロ ミルクキャンディ',
+      'こんにゃくゼリー',
+      'ゼンブブレッドきなこあんぱん',
+      'ゼンブブレッドカカオ',
+      'おからハムチーズブリトー',
+      'ピザまん風おから蒸しパン',
+      '低糖質丸パン',
+      'ゼンブブレッド3種の雑穀',
+      'ゼンブブレッドふわもちロール',
+      '6Pチーズ',
+      'さけるチーズ',
+      'フリーズドライスープ・味噌汁（無印良品）',
+    ];
+
     // 表記ゆれ・存在しない名前が混ざっても落ちないようにする
     function allow(arr){
       return arr.filter(n => ALL.includes(n));
@@ -213,27 +266,45 @@
 
     const questions = [
       {
-        text: 'Q1. 特定原材料（えび、かに、くるみ、小麦、そば、卵、乳、落花生）の中でアレルギーはある？',
+        text: 'Q1. 特定原材料（えび、かに、くるみ、小麦、そば、卵、乳、落花生）の中でアレルギーはありますか？',
         yes: allow(Q1_YES),
         no: ALL
       },
       {
-        text: 'Q2. 甘い系がいい？',
+        text: 'Q2. 甘い系がいいですか？',
         yes: allow(Q2_YES_EFFECTIVE),
         no: allow(Q2_NO_EFFECTIVE)
       },
       {
-        text: 'Q3. 腹持ちを重視したい？',
+        text: 'Q3. 腹持ちを重視したいですか？',
         yes: allow(Q3_YES_EFFECTIVE),
         no: allow(Q3_NO_EFFECTIVE)
+      },
+      {
+        text: 'Q4. 食感はどちらがいいですか？\nYES：サクサク・カリカリ\nNO：しっとり・やわらか・さっぱり',
+        yes: allow(Q4_YES),
+        no: allow(Q4_NO),
+        onlyWhen: function(currentFoods, answers){
+          return answers.q1 === 'no';
+        }
       }
     ];
 
     let current = foods.slice();
     let skipped = [];
     let index = 0;
+    let answers = {};
 
     function renderQuestion(){
+      while(index < questions.length){
+        const candidate = questions[index];
+        if(typeof candidate.onlyWhen === 'function' && !candidate.onlyWhen(current, answers)){
+          index++;
+          continue;
+        }
+        break;
+      }
+
       if(index >= questions.length){
         renderResult();
         return;
@@ -246,6 +317,7 @@
 
       const h2 = document.createElement('h2');
       h2.textContent = q.text;
+      h2.style.whiteSpace = 'pre-line';
       wrap.appendChild(h2);
 
       const opts = document.createElement('div');
@@ -270,6 +342,11 @@
 
     function answer(type){
       const q = questions[index];
+      if(index === 0) answers.q1 = type;
+      if(index === 1) answers.q2 = type;
+      if(index === 2) answers.q3 = type;
+      if(index === 3) answers.q4 = type;
+
       const allowList = q[type];
       const trial = current.filter(f => allowList.includes(f.name));
 
@@ -296,17 +373,21 @@
         const li = document.createElement('li');
         const color = (f.type === '手作り') ? '#ff2d8b' : '#0077ff';
 
+        const nameSpan = document.createElement('span');
+
         if(f.url){
           const a = document.createElement('a');
           a.href = f.url;
           a.target = '_blank';
           a.style.color = color;
           a.textContent = f.name;
-          li.appendChild(a);
+          nameSpan.appendChild(a);
         }else{
-          li.textContent = f.name;
-          li.style.color = color;
+          nameSpan.textContent = f.name;
+          nameSpan.style.color = color;
         }
+
+        li.appendChild(nameSpan);
 
         ul.appendChild(li);
       });
@@ -314,16 +395,86 @@
       return ul;
     }
 
+    function getResultNumber(){
+      if(answers.q1 === 'yes' && answers.q2 === 'yes' && answers.q3 === 'yes') return '①';
+      if(answers.q1 === 'yes' && answers.q2 === 'yes' && answers.q3 === 'no') return '②';
+      if(answers.q1 === 'yes' && answers.q2 === 'no' && answers.q3 === 'yes') return '③';
+      if(answers.q1 === 'yes' && answers.q2 === 'no' && answers.q3 === 'no') return '④';
+      if(answers.q1 === 'no' && answers.q2 === 'yes' && answers.q3 === 'yes' && answers.q4 === 'yes') return '⑤';
+      if(answers.q1 === 'no' && answers.q2 === 'yes' && answers.q3 === 'yes' && answers.q4 === 'no') return '⑥';
+      if(answers.q1 === 'no' && answers.q2 === 'yes' && answers.q3 === 'no' && answers.q4 === 'yes') return '⑦';
+      if(answers.q1 === 'no' && answers.q2 === 'yes' && answers.q3 === 'no' && answers.q4 === 'no') return '⑧';
+      if(answers.q1 === 'no' && answers.q2 === 'no' && answers.q3 === 'yes' && answers.q4 === 'yes') return '⑨';
+      if(answers.q1 === 'no' && answers.q2 === 'no' && answers.q3 === 'yes' && answers.q4 === 'no') return '⑩';
+      if(answers.q1 === 'no' && answers.q2 === 'no' && answers.q3 === 'no' && answers.q4 === 'yes') return '⑪';
+      if(answers.q1 === 'no' && answers.q2 === 'no' && answers.q3 === 'no' && answers.q4 === 'no') return '⑫';
+      return '';
+    }
+
+    function getRecommendationMessage(){
+      const noQ4 = answers.q1 === 'no';
+      if(answers.q2 === 'yes' && answers.q3 === 'yes'){
+        return '甘さを楽しみながら、腹持ちも意識したおやつを選びました。';
+      }
+      if(answers.q2 === 'yes' && answers.q3 === 'no'){
+        return '甘いものの中でも、軽めで食べやすいおやつを選びました。';
+      }
+      if(answers.q2 === 'no' && answers.q3 === 'yes'){
+        return '甘くない系の中から、腹持ちしやすいおやつを選びました。';
+      }
+      if(answers.q2 === 'no' && answers.q3 === 'no'){
+        return '甘くない系の中から、軽めで食べやすいおやつを選びました。';
+      }
+      return noQ4 ? '回答に合わせておやつを選びました。' : '回答に合わせておやつを選びました。';
+    }
+
+    function getRecommendationReason(){
+      if(answers.q2 === 'yes' && answers.q3 === 'yes' && answers.q4 === 'yes'){
+        return '甘さがありつつ、噛みごたえのある食品を中心に選んでいるため、満足感が出やすく腹持ちも意識しやすい組み合わせです。';
+      }
+      if(answers.q2 === 'yes' && answers.q3 === 'yes' && answers.q4 === 'no'){
+        return '甘いものの中でも、やわらかく食べやすく、糖質を抑えた食品を選んでいるため、満足感と食べやすさを両立しやすい組み合わせです。';
+      }
+      if(answers.q2 === 'yes' && answers.q3 === 'no' && answers.q4 === 'yes'){
+        return '甘いものの中でも、サクサクした食感で軽く食べやすいおやつを選んでいます。';
+      }
+      if(answers.q2 === 'yes' && answers.q3 === 'no' && answers.q4 === 'no'){
+        return '甘いものの中でも、やわらかさやさっぱり感があり、軽めに楽しみやすいおやつを選んでいます。';
+      }
+      if(answers.q2 === 'no' && answers.q3 === 'yes' && answers.q4 === 'yes'){
+        return '甘くない系の中でも、噛みごたえがあり、満足感や腹持ちにつながりやすいおやつを選んでいます。';
+      }
+      if(answers.q2 === 'no' && answers.q3 === 'yes' && answers.q4 === 'no'){
+        return '甘くない系の中でも、やわらかく食べやすく、腹持ちしやすいおやつを選んでいます。';
+      }
+      if(answers.q2 === 'no' && answers.q3 === 'no' && answers.q4 === 'yes'){
+        return '甘くない系の中でも、軽めでサクサクした食感を楽しめるおやつを選んでいます。';
+      }
+      if(answers.q2 === 'no' && answers.q3 === 'no' && answers.q4 === 'no'){
+        return '甘くない系の中でも、やわらかさやさっぱり感があり、軽めに取り入れやすいおやつを選んでいます。';
+      }
+      if(answers.q1 === 'yes' && answers.q2 === 'yes' && answers.q3 === 'yes'){
+        return 'アレルギーに配慮しながら、甘さと腹持ちの両方を意識したおやつを選んでいます。';
+      }
+      if(answers.q1 === 'yes' && answers.q2 === 'yes' && answers.q3 === 'no'){
+        return 'アレルギーに配慮しながら、甘くて軽めに食べやすいおやつを選んでいます。';
+      }
+      if(answers.q1 === 'yes' && answers.q2 === 'no' && answers.q3 === 'yes'){
+        return 'アレルギーに配慮しながら、甘くない系で腹持ちしやすいおやつを選んでいます。';
+      }
+      if(answers.q1 === 'yes' && answers.q2 === 'no' && answers.q3 === 'no'){
+        return 'アレルギーに配慮しながら、甘くない系で軽めに食べやすいおやつを選んでいます。';
+      }
+      return '回答に合わせて、食べやすさや満足感のバランスを考えて選んでいます。';
+    }
+
     function renderResult(){
       app.innerHTML = '';
 
       const h2 = document.createElement('h2');
+      const resultNumber = getResultNumber();
       h2.textContent = '診断結果';
       app.appendChild(h2);
-
-      const p = document.createElement('p');
-      p.textContent = 'あなたにおすすめのおやつ';
-      app.appendChild(p);
 
       const handmade = current.filter(f => f.type === '手作り');
       const retail = current.filter(f => f.type === '市販');
@@ -349,12 +500,40 @@
       cols.appendChild(box2);
       app.appendChild(cols);
 
+      const details = document.createElement('details');
+      details.className = 'reason-box';
+      const summary = document.createElement('summary');
+      summary.textContent = 'おすすめポイント';
+      details.appendChild(summary);
+      const reason = document.createElement('p');
+      reason.textContent = getRecommendationReason();
+      details.appendChild(reason);
+      app.appendChild(details);
+
       if(skipped.length){
         const div = document.createElement('div');
         div.className = 'skipped';
         div.innerHTML = '診断に反映されなかった質問：<br>' + skipped.join('<br>');
         app.appendChild(div);
       }
+
+      const retryWrap = document.createElement('div');
+      retryWrap.className = 'options';
+      retryWrap.style.marginTop = '18px';
+
+      const retryBtn = document.createElement('button');
+      retryBtn.className = 'yes';
+      retryBtn.textContent = 'もう一回診断する';
+      retryBtn.onclick = function(){
+        current = foods.slice();
+        skipped = [];
+        index = 0;
+        answers = {};
+        renderQuestion();
+      };
+
+      retryWrap.appendChild(retryBtn);
+      app.appendChild(retryWrap);
     }
 
     renderQuestion();
